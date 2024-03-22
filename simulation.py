@@ -18,7 +18,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 # Current Issues
 
 # 1. I think that there will be some funky business with the SpeciesID if we're making new Species
@@ -41,7 +40,6 @@ import numpy as np
 
 # %%
 
-
 class Species:
     """
     Species class.
@@ -57,8 +55,11 @@ class Species:
     """
     speciesID = 1
 
-    def __init__(self, parentID: int, p1: float, p2: float, t1: int, t2: int,
-                 t3: int, ns: int, conNDD: float, hetNDD: float):
+    def __init__(self, parentID: int,
+                 p1: float, p2: float, 
+                 t1: int, t2: int,
+                 ns: int, 
+                 conNDD: float, hetNDD: float):
         """
         Initialize a new instance of Species.
 
@@ -72,8 +73,6 @@ class Species:
             t1 (int): The number of timesteps required for a Seed to become an Adult.
             t2 (int): The number of timesteps used for calculations with
                 p2. Set arbitrarily by the user.
-            t3 (int): The number of timesteps required for an Adult of this Species to start
-                producing Seed objects.
             ns (int): The number of Seed objects produced by an Adult of this Species every tick.
             CNDD (float): The magnitude of CNDD effects on this Species.
             HNDD (float): The magnitude of HNDD effects on this Species.
@@ -98,15 +97,15 @@ class Species:
         Returns:
             dict: Species data stored as a dictionary.
         """
-        returnDict = {"speciesID": self.speciesID, "parentID": self.parentID, "t1": self.t1,
-                      "p1": self.p1, "seedPerTick": self.seedPerTick, "t2": self.t2, "p2": self.p2,
-                      "adultPerTick": self.adultPerTick, "ns": self.ns, "CNDD": self.conNDD,
-                      "HNDD": self.hetNDD}
+        returnDict = {"speciesID": self.speciesID, "parentID": self.parentID, 
+                      "t1": self.t1, "p1": self.p1, "seedPerTick": self.seedPerTick,
+                      "t2": self.t2, "p2": self.p2, "adultPerTick": self.adultPerTick,
+                      "ns": self.ns,
+                      "CNDD": self.conNDD, "HNDD": self.hetNDD}
         return returnDict
 
 
 # %%
-
 
 class SpeciesList:
     """
@@ -144,8 +143,8 @@ class SpeciesList:
             self.
         """
         try:
-            newSpecies = pd.DataFrame(species.getDataAsDict(), index=[0])
-            self.storage = pd.concat([self.storage, newSpecies], ignore_index=True)
+            newSpecies = pd.DataFrame(species.getDataAsDict(), index = [0])
+            self.storage = pd.concat([self.storage, newSpecies], ignore_index = True)
             self.species.append(species)
             print("Species " + str(species.speciesID) + " added.")
             return self
@@ -166,7 +165,7 @@ class SpeciesList:
         """
         newStorage = pd.concat([self.storage, newList.storage], ignore_index=True)
         self.species.extend([sp for sp in newList.species if sp not in self.species])
-        self.storage = newStorage.drop_duplicates()
+        self.storage = newStorage.drop_duplicates(["speciesID"])
         return self
 
     def loadSpeciesData(self, filepath: str) -> None:
@@ -200,10 +199,10 @@ class SpeciesList:
 
 # %%
 
-
 class Plant:
     """
     Parent class for all Plant objects. Contains several generic methods to be overridden.
+    The methods to be overwritten are stated here as an example of how it will be used
 
     Attributes:
         species (Species): the Species of this Plant.
@@ -214,7 +213,7 @@ class Plant:
         updateTick(cNeighbors: int, hNeighbors: int) -> bool
         update() -> 'Plant'
     """
-    def __init__(self, species: Species, age: int=0): # pass the Species object into the constructor
+    def __init__(self, species: Species, age: int = 0): # pass the Species object into the constructor
         """
         Initialize a new instance of Plant.
 
@@ -269,7 +268,6 @@ class Plant:
 
 # %%
 
-
 class Juvenile(Plant):
     """
     Juvenile class that inherits from the Plant class. All three methods are overriden.
@@ -304,7 +302,6 @@ class Juvenile(Plant):
 
 # %%
 
-
 class Adult(Plant):
     """
     Adult class that inherits from the Plant class. All three methods are overriden.
@@ -337,7 +334,6 @@ class Adult(Plant):
 
 # %%
 
-
 class DeadPlant(Plant):
     """
     DeadPlant class that inherits from the Plant class. This is meant to be a filler class,
@@ -348,7 +344,6 @@ class DeadPlant(Plant):
 
 
 # %%
-
 
 class PlantArray:
     """
@@ -367,15 +362,28 @@ class PlantArray:
         update(neighborDict: dict) -> 'PlantArray'
         toDict() -> dict
     """
-    def __init__(self):
+    def __init__(self, storageLimit : int):
         self.hasAdult = False
         self.currentAdult = None
         self.storage = []
+        self.storageLimit = storageLimit
+        self.neighborDict = {}
 
     def addPlant(self, plant: Plant) -> 'PlantArray':
         """
         Adds a Plant object to the PlantArray. If the new Plant object is an Adult and
         the PlantArray already has an Adult, the new Plant is not added.
+        
+        Updates self.neighborTuple afterwards
+        
+        Case 1: Add adult
+            1.1 Already have adult -> None
+            1.2 No adult
+                1.2.1 Storage full capacity -> Random replace
+                1.2.2 Storage has capacity -> Add
+        Case 2: Add juvenile
+            2.1 Storage full capacity -> None
+            2.2 Storage no capacity -> add
 
         Args:
             plant (Plant): New Plant object.
@@ -383,18 +391,40 @@ class PlantArray:
         Returns:
             self.
         """
-        if (isinstance(plant, Adult) and self.hasAdult):              # if we already have an adult, do not add
-            return self
-        if (len(self.storage) >= 50):                                 # if we are full on capacity
-            if (isinstance(plant, Adult)):                            # but you want to add an adult
-                self.storage[random.randint(0, len(self.storage)-1)] = plant     # randomly replace one with an adult
-                self.hasAdult = True
-                self.currentAdult = plant
-            return self                                               # otherwise, you don't get added
-        if isinstance(plant, Adult):                                  # if not full capacity and it's an adult
-            self.hasAdult = True
+        speciesID = plant.species.speciesID # for updating neighborList
+        if (isinstance(plant, Adult)): 
+            if (self.hasAdult): # if we already have an adult, do not add
+                return self 
+            self.hasAdult = True; # add the adult
             self.currentAdult = plant
-        self.storage.append(plant)
+            if (speciesID in self.neighborDict): # update neighborDict
+                self.neighborDict[speciesID][0] += 1
+            else: 
+                self.neighborDict[speciesID] = [1, 0]
+            if (len(self.storage) >= self.storageLimit): # if full capacity
+                self.storage[random.randint(0, len(self.storage)-1)] = plant # randomly replace 
+            else: 
+                self.storage.append(plant) # not full capacity
+        
+        elif (len(self.storage) < self.storageLimit): # Juvenile
+            self.storage.append(plant) # added if below full capacity
+            if (speciesID in self.neighborDict): # update neighborDict
+                self.neighborDict[speciesID][1] += 1
+            else:
+                self.neighborDict[speciesID] = [0, 1]
+        return self
+    
+    def addAdult(self, plant: Adult) -> 'PlantArray':
+        """
+        Used exclusively in the boomerModel.
+        Allows of addition of multiple Adults into storage, 
+        for them to be scattered upon merge.
+        
+        Method does not break anything as addPlant is still called after,
+        ie. only one Adult per grid is preserved regardless
+        """
+        if (len(self.storage) < self.storageLimit): # ensure no overflow
+            self.storage.append(plant)
         return self
 
     def mergeArray(self, newArray: 'PlantArray') -> 'PlantArray':
@@ -411,31 +441,134 @@ class PlantArray:
 
         if (self.hasAdult and newArray.hasAdult):
             return self
-        selfCopy = self
+        selfCopy = self # note selfCopy and self point to the same object
         for otherPlant in newArray.storage:
-            selfCopy = selfCopy.addPlant(otherPlant)
+            selfCopy = selfCopy.addPlant(otherPlant) # addPlant() updates neighborList
         return selfCopy
 
-    def produceSeeds(self) -> 'PlantArray':
+    def produceSeeds(self, boomerModel : bool) -> 'PlantArray':
         """
         Produces a list of Juvenile objects that the PlantArray produces in one tick.
 
         Returns:
             PlantArray: Juvenile objects.
         """
-        seedArray = PlantArray()
+        seedArray = PlantArray(self.storageLimit)
         if self.hasAdult:
-            for _ in range (self.currentAdult.species.ns):
-                seedArray.addPlant(Juvenile(self.currentAdult.species, 0))
+            if (boomerModel): 
+                for _ in range (self.currentAdult.species.ns):
+                    seedArray.addAdult(Adult(self.currentAdult.species, 0))
+            else:    
+                for _ in range (self.currentAdult.species.ns):
+                    seedArray.addPlant(Juvenile(self.currentAdult.species, 0))
         return seedArray
+    
+    def mergeDict(self, neighborDict: dict, boomerModel: bool) -> dict:
+        """
+        This creates another dictionary to be used during update()
+        Calls either boomerMergeDict() or zoomerMergeDict() depending on model variant
+        
+        Recursive method, where all Plant must call mergeDict to produce a standardised dict      
+        
+        Args:
+            neighborDict (dict): dict of neighbor Plants
+            boomerModel (boolean): boolean if boomer model is being run
 
+        Returns:
+            mergedDict (dict): dict of all Plant
+        """
+        if (boomerModel):
+            return self.boomerMergeDict(neighborDict)
+        return self.zoomerMergeDict(neighborDict)
+    
+    def boomerMergeDict(self, neighborDict: dict) -> dict:
+        """
+        Return a dictionary of Adult count only.
+        Key is speciesID
+        Value is number of Adult
+        
+        Args:
+            neighborDict (dict): dict of neighbor Plants
+            
+        Returns:
+            mergedDict (dict): dict of all Adult Plant
+        """
+        if (self.hasAdult):
+            speciesID = self.currentAdult.species.speciesID
+            if (speciesID in neighborDict):
+                neighborDict[speciesID] += 1
+            else: 
+                neighborDict[speciesID] = 1
+        return neighborDict
+    
+    def zoomerMergeDict(self, neighborDict: dict) -> dict:
+        """
+        Return a dictionary of all Plant count.
+        Key is speciesID
+        Value is number of Adult and Juvenile (not distinguished)
+        
+        Args:
+            neighborDict (dict): dict of neighbor Plants
+            
+        Returns:
+            mergedDict (dict): dict of all Plant
+        """
+        for speciesID, countLst in self.neighborDict.items():
+            count = sum(countLst)
+            if (speciesID in neighborDict):
+                neighborDict[speciesID] += count # sum of both Adult and Juvenile
+            else:
+                neighborDict[speciesID] = count
+        return neighborDict
+    
+    def toDict(self) -> dict:
+        """
+        Returns as a dict
+        Key is speciesID, 
+        value is a list containing number of (Adult, Juvenile)
+        
+        Since every PlantArray has a maximum of one Adult, 
+        there is no point in checking every iteration. We will check at the end
+        
+        Avoid repeatedly calling this method as it seems to be potentially expensive
+        Can be used during instatiation
+        """
+        returnDict = {}
+        for plant in self.storage:
+            speciesID = plant.species.speciesID
+            if (speciesID in returnDict):
+                returnDict[speciesID][1] += 1
+            else:
+                reutrnDict[speciesID] = [0, 1]
+        if (self.hasAdult): # Now check if Adult exists
+            speciesID = plant.currentAdult.species.speciesID
+            if (speciesID in returnDict): # The Adult was counted as a "Juvenile"
+                returnDict[speciesID][0] += 1
+                returnDict[speciesID][1] -= 1
+            else: # New species
+                returnDict[speciesID] = [1, 0]
+        self.neighborDict = returnDict # Update self
+        return returnDict
+    
     def update(self, neighborDict: dict) -> 'PlantArray':
         """
-        Takes in a dictionary of neighbors to update a cell. Each individual Plant in the
-        PlantArray will get updated. If the PlantArray has an Adult present and it survives
-        the update, all other potential Adults (i.e., Juvenile trees which are old enough)
-        will remain at Juvenile stage. If there is no Adult present in the PlantArray, one
-        of the potential Adults is randomly selected to be the new Adult of the PlantArray.
+        Takes in neighborDict (currently set as a 3 x 3 Moore neighborhood)
+        
+        NOTE: We assume that the neighborDict already contains itself.
+        ie. mergeDict() was called on the Tile itself (refer to Board)
+        
+        This neighborDict is either created by boomerMergeDict() or zoomerMergeDict()
+        Thus the implementation in update() is generalised
+        
+        Each individual Plan in the PlantArray will get updated first.
+        Juvenile and Adult will be added into separate lists.
+        If there is an Adult present after the update, purge all other Adult
+            ie. There can only be one Adult and the Adult that has survived the longest
+                is taken to be the "most dominant"
+        Else select an Adult at random
+    
+        Create a new dict to replace self.neighborDict.
+        Further optimisation will require changing self.neighborDict instead of creating new
 
         Args:
             neighborDict (dict): Dictionary containing the number of neighboring Adult trees.
@@ -445,71 +578,56 @@ class PlantArray:
             self.
         """
         newStorage = []
-        pickNewAdult = True
-        if self.hasAdult:
-            pickNewAdult = False
+        adultStorage = []
+        newNeighborDict = {}
         for plant in self.storage:
-            plantSpecies = plant.species.speciesID
-            conspecificCount, heterospecificCount = 0, 0
-            if plantSpecies in neighborDict:
-                conspecificCount = neighborDict[plantSpecies]
-                heterospecificCount = sum(neighborDict.values()) - conspecificCount
-            else:
-                heterospecificCount = sum(neighborDict.values())
-            newPlant = plant.update(conspecificCount, heterospecificCount)
-            if not isinstance(newPlant, DeadPlant):
-                newStorage.append(newPlant)
-            if plant == self.currentAdult:
-                if isinstance(newPlant, DeadPlant):
-                    self.currentAdult = None
+            speciesID = plant.species.speciesID
+            conCount = neighborDict[speciesID] - 1 # note -1 to subtract itself
+            hetCount = sum(neighborDict.values()) - conCount
+            
+            newPlant = plant.update(conCount, hetCount)
+            if (isinstance(newPlant, DeadPlant)): # plant died
+                if (plant == self.currentAdult): # Adult that died
                     self.hasAdult = False
-                    pickNewAdult = True
-        if pickNewAdult:
-            adultList = [plant for plant in newStorage if isinstance(plant, Adult)]
-            if len(adultList) > 0:
+                    self.currentAdult = None
+            else: # plant survived
+                if (isinstance(newPlant, Adult)): # Grew into Adult
+                    adultStorage.append(newPlant)
+                    if (plant == self.currentAdult): # Update the currentAdult
+                        self.currentAdult = newPlant
+                else: # Still Juvenile
+                    newStorage.append(newPlant)
+                    if (speciesID in newNeighborDict):
+                        newNeighborDict[speciesID][1] += 1
+                    else:
+                        newNeighborDict[speciesID] = [0, 1]
+                        
+        speciesID = -1 # error check if no new adult
+        if (self.hasAdult): # Adult survived to next timepoint
+            speciesID = self.currentAdult.species.speciesID
+        else: # Need a replacement
+            if (len(adultStorage) > 0): # There are adults to pick from
                 self.hasAdult = True
-                self.currentAdult = adultList[random.randint(0, len(adultList) - 1)]
-        newStorage = list(filter(lambda x: not isinstance(x, Adult), newStorage))[0:50]
-        if self.hasAdult:
-            if len(newStorage) > 0:
-                newStorage[random.randint(0, len(newStorage) - 1)] = self.currentAdult     
+                self.currentAdult = adultStorage[random.randint(0, len(adultStorage) -1)]
+        if (speciesID != -1): # Adult exists
+            newStorage.append(self.currentAdult) # add Adult into the new list
+            if (speciesID in newNeighborDict):
+                newNeighborDict[speciesID][0] += 1
             else:
-                newStorage.append(self.currentAdult)
+                newNeighborDict[speciesID] = [1, 0]
+        
         self.storage = newStorage
+        self.neighborDict = newNeighborDict
         return self
 
-    def toDict(self) -> dict:
+    def clear(self) -> 'PlantArray':
         """
-        Returns as a dictionary. Key is SpeciesID, value is number of Adults.
+        Use for seedBoard in 'Board' class
+        Called upon addition of seedBoard to board
         """
-        returnDict = {}
-        if self.hasAdult:
-            returnDict[self.currentAdult.species.speciesID] = 1
-        return returnDict
-
-
-#    def toDict(self) -> dict:
-#        """
-#        Stores the Plant objects in the PlantArray as a dictionary, with SpeciesID as keys.
-#        This method assumes that the PlantArray has at most one Adult object inside it.
-# 
-#        Return:
-#            dict: Keys are SpeciesID, values are a list containing the number of Adults and
-#                Juveniles in the format [adultCount, juvenileCount].
-#        """
-#        returnDict = {}
-#        if self.hasAdult:
-#            returnDict[self.currentAdult.species.speciesID] = [1, 0]
-#        for plant in self.storage:
-#            speciesID = plant.species.speciesID
-#            if speciesID in returnDict:
-#                returnDict[speciesID][1] += 1
-#            else:
-#                returnDict[speciesID] = [0, 1]
-#        return returnDict
+        return PlantArray(self.storageLimit)
 
 # %%
-
 
 class Tile:
     """
@@ -523,18 +641,20 @@ class Tile:
         updateData() -> 'Tile'
         update(neighborData: dict) -> tuple
     """
-    def __init__(self):
+    def __init__(self, storageLimit : int):
         self.plantData = {}
-        self.plantArray = PlantArray()
+        self.storageLimit = storageLimit
+        self.plantArray = PlantArray(self.storageLimit)
 
     def updateData(self) -> 'Tile':
         """
         Updates the dictionary containing the number of Adult trees on the Tile.
         """
-        self.plantData = self.plantArray.toDict()
+        self.plantData = self.plantArray.neighborDict
         return self
 
-    def update(self, neighborData: dict) -> tuple:
+    def update(self, neighborData: dict,
+              boomerModel : bool) -> tuple:
         """
         Updates the Plant objects stored on this tile, using the neighbor data.
 
@@ -548,12 +668,11 @@ class Tile:
         newPlantArray = self.plantArray.update(neighborData)
         self.plantArray = newPlantArray
         self.updateData()
-        newSeeds = self.plantArray.produceSeeds()
+        newSeeds = self.plantArray.produceSeeds(boomerModel)
         return self, newSeeds
 
 
 # %%
-
 
 class Board:
     """
@@ -574,18 +693,40 @@ class Board:
         update() -> 'Board'
         clearBoard() -> 'Board'
     """
-    def __init__(self, speciesList: SpeciesList, boardLength: int):
+    def __init__(self, speciesList: SpeciesList, boardLength: int, 
+                storageLimit : int, startNumber : int,
+                boomerModel : bool,
+                stdev : int, 
+                printFreq : int):
         self.speciesList = speciesList
         self.boardLength = boardLength
         self.boardTime = 0
-        self.board = [[Tile() for _ in range(self.boardLength)] for _ in range(self.boardLength)]
-        self.seedBoard = [[PlantArray() for _ in range(self.boardLength)]
+        self.storageLimit = storageLimit
+        self.boomerModel = boomerModel
+        self.board = [[Tile(self.storageLimit) for _ in range(self.boardLength)] for _ in range(self.boardLength)]
+        self.seedBoard = [[PlantArray(storageLimit) for _ in range(self.boardLength)]
                           for _ in range(self.boardLength)]
+        
+        self.startNumber = startNumber
+        self.printFreq = printFreq
         for i in range(len(self.speciesList.species)):
-            for j in range(5):
-                start_x = random.randint(0, self.boardLength - 1)
-                start_y = random.randint(0, self.boardLength - 1)
-                self.seedBoard[start_x][start_y].addPlant(Juvenile(self.speciesList.species[i], 0))
+            if (self.boomerModel): # generate unique coordinates to populate the board
+                coords = set()
+                while len(coords) < self.startNumber:
+                    coords.add((np.random.randint(0, self.boardLength - 1), 
+                                np.random.randint(0, self.boardLength - 1)))
+                for coord in coords:
+                    x, y = coord
+                    self.seedBoard[x][y].addAdult(Adult(self.speciesList.species[i], 0))
+            else:
+                for j in range(self.startNumber):
+                    start_x = random.randint(0, self.boardLength - 1)
+                    start_y = random.randint(0, self.boardLength - 1)
+                    self.seedBoard[start_x][start_y].addPlant(Juvenile(self.speciesList.species[i], 0))
+        
+        self.stdev = stdev
+        self.mean = [0, 0]
+        self.cov = [[self.stdev**2, 0], [0, self.stdev**2]]
 
     def loadBoard(self, filepath: str) -> 'Board':
         """
@@ -619,7 +760,7 @@ class Board:
         self.speciesList = self.speciesList.loadSpeciesData(filepath)
         return self
 
-    def printBoard(self) -> None:
+    def printBoard(self, boardTime: int) -> None:
         """
         Prints a Board object as a heatmap. The colours on the heatmap represent the Species of the
         Adult trees on the Board.
@@ -631,8 +772,11 @@ class Board:
                     printedBoard[i][j] = self.board[i][j].plantArray.currentAdult.species.speciesID
         plt.imshow(printedBoard, cmap=plt.get_cmap("tab20c", len(self.speciesList.species) + 2), 
                    interpolation='nearest', vmin = -1, vmax = len(self.speciesList.species) + 1)
-        plt.colorbar()
-        plt.show()
+        if (boardTime == 1):
+            plt.colorbar()
+#         plt.show()
+        outputName = str(boardTime) + ".png"
+        plt.savefig(outputName)
 
     def printSpecies(self, speciesID: int) -> None:
         """
@@ -654,24 +798,54 @@ class Board:
     def makeNeighborDicts(self) -> list:
         """
         Generates a nested list storing the neighbor dictionaries for each Tile on the Board.
+        Uses recursive mergeDict() function from PlantArray
+        
+        Future optimisation can involve Search and cumulative algorithms involving demergeDict()
         """
         returnList = [[0 for _ in range(self.boardLength)] for _ in range(self.boardLength)]
         for i in range (self.boardLength):
             for j in range(self.boardLength):
                 newDict = {}
-                positions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+                positions = [[i - 1, j - 1], [i- 1, j], [i - 1, j + 1], 
+                             [i, j - 1], [i, j], [i, j + 1], 
+                             [i + 1, j - 1], [i + 1, j], [i + 1, j + 1]]
                 for position in positions:
-                    if ((i + position[0] > -1) and (i + position[0] < self.boardLength) and
-                        (j + position[1] > -1) and (j + position[1] < self.boardLength)):
-                        neighborDict = (self.board[i + position[0]][j + position[1]]
-                                        .plantArray.toDict())
-                        for speciesID, count in neighborDict.items():
-                            if speciesID in newDict:
-                                newDict[speciesID] = newDict[speciesID] + count
-                            else:
-                                newDict[speciesID] = count
+                    if ((position[0] > -1) and (position[0] < self.boardLength) and
+                        (position[1] > -1) and (position[1] < self.boardLength)): # check within boundary
+                        newDict = (self.board[position[0]][position[1]].plantArray.
+                                             mergeDict(newDict, self.boomerModel))
                 returnList[i][j] = newDict
         return returnList
+    
+    def saveNeighborDicts(self, boardTime : int, boomerModel : bool) -> list:
+        """
+        Same as makeNeighborDicts, but this time we need to include saving the counts as well
+        """
+        exportData = self.speciesList.storage.copy(deep = True)
+        exportData['Adult'] = 0
+        exportData['Juvenile'] = 0
+        returnList = [[0 for _ in range(self.boardLength)] for _ in range(self.boardLength)]
+        for i in range (self.boardLength):
+            for j in range(self.boardLength):
+                exportDict = self.board[i][j].plantArray.neighborDict
+                for speciesID, countList in exportDict.items():
+                    exportData.loc[exportData['speciesID'] == speciesID, 'Adult'] += countList[0]
+                    exportData.loc[exportData['speciesID'] == speciesID, 'Juvenile'] += countList[1]
+                
+                newDict = {}
+                positions = [[i - 1, j - 1], [i- 1, j], [i - 1, j + 1], 
+                             [i, j - 1], [i, j], [i, j + 1], 
+                             [i + 1, j - 1], [i + 1, j], [i + 1, j + 1]]
+                for position in positions:
+                    if ((position[0] > -1) and (position[0] < self.boardLength) and
+                        (position[1] > -1) and (position[1] < self.boardLength)): # check within boundary
+                        newDict = (self.board[position[0]][position[1]].plantArray.
+                                   mergeDict(newDict, self.boomerModel))
+                returnList[i][j] = newDict
+        saveName = str(boardTime) + ".csv"                                                  
+        exportData.to_csv(saveName, index=False)
+        return returnList
+        
 
     def update(self) -> 'Board':
         """
@@ -684,22 +858,40 @@ class Board:
         Return:
             self.
         """
+        
+        if (((self.boardTime - 1) % self.printFreq) == 0): # steal state every 100 timesteps
+            newNeighborDicts = self.saveNeighborDicts(self.boardTime, self.boomerModel)
+            self.printBoard(self.boardTime)
+        else:
+            newNeighborDicts = self.makeNeighborDicts()
+            
         self.boardTime += 1
-        newNeighborDicts = self.makeNeighborDicts()
+        
         for i in range(self.boardLength):
             for j in range(self.boardLength):
-                tileUpdate = self.board[i][j].update(newNeighborDicts[i][j])       # (Tile, PlantArray)
+                tileUpdate = self.board[i][j].update(newNeighborDicts[i][j], 
+                                                    self.boomerModel)       # (Tile, PlantArray)
                 self.board[i][j] = tileUpdate[0]                                   # update Tile
                 newSeeds = tileUpdate[1]                                           # PlantArray of interest
+                
                 for k in range(len(newSeeds.storage)):                             # list of Plants
-                    newX = random.choice([-1, 0, 1])
-                    newY = random.choice([-1, 0, 1])
+#                     newX = random.choice([-1, 0, 1])
+#                     newY = random.choice([-1, 0, 1])
+                    newX, newY = np.round(np.random.multivariate_normal(self.mean, self.cov, 1))[0] # binomial normal distribution
+                    newX = int(newX)
+                    newY = int(newY)
                     if ((i + newX > -1) and (i + newX < self.boardLength) and
                         (j + newY > -1) and (j + newY < self.boardLength)):
-                        self.seedBoard[i + newX][j + newY].addPlant(newSeeds.storage[k])
+                        self.seedBoard[i + newX][j + newY].addPlant(newSeeds.storage[k]) # This line ensures
+                                                                                         # boomerModel with 
+                                                                                         # PlantArray of Adult
+                                                                                         # will not overflow
+                        
         for i in range(self.boardLength):
             for j in range(self.boardLength):
-                self.board[i][j].plantArray.mergeArray(self.seedBoard[i][j])
+                self.board[i][j].plantArray.mergeArray(self.seedBoard[i][j]) # mergeArray allows addition of an Adult
+                                                                             # if the board itself does not have an Adult yet
+                self.seedBoard[i][j] = self.seedBoard[i][j].clear()
         return self
 
     def clearBoard(self) -> 'Board':
@@ -709,11 +901,10 @@ class Board:
         Return:
             'Board': An empty Board object.
         """
-        return Board(self.speciesList, self.boardLength)
+        return Board(self.speciesList, self.boardLength, self.storageLimit, self.startNumber)
 
 
 # %%
-
 
 class Simulation:
     """
@@ -735,8 +926,11 @@ class Simulation:
         saveSpecies(filepath: str) -> None
         run(iterations: int) -> 'Simulation'
     """
-    def __init__(self, speciesList: SpeciesList, boardLength: int):
-        self.board = Board(speciesList, boardLength)
+    def __init__(self, speciesList: SpeciesList, boardLength: int,
+                storageLimit : int = 50, startNumber : int = 5, 
+                boomerModel: bool = False, stdev : int = 5, 
+                printFreq : int = 100):
+        self.board = Board(speciesList, boardLength, storageLimit, startNumber, boomerModel, stdev, printFreq)
         self.params = None
         self.simulationTime = 0
 
@@ -824,7 +1018,7 @@ class Simulation:
         """
         self.board.speciesList.saveSpeciesData(filepath)
 
-    def run(self, iterations: int, printFreq: int) -> 'Simulation':
+    def run(self, iterations: int) -> 'Simulation':
         """
         Updates the Board, i.e., runs the Simulation for a fixed number of iterations.
         Prints the Board every 100 timesteps.
@@ -836,11 +1030,39 @@ class Simulation:
         Return:
             self.
         """
-        for i in range(iterations):
-            self.simulationTime += 1
+        for i in range(iterations + 2):
             self.board.update()
-            if not (i % printFreq) and i > 0:
-                print(f'Board at {self.simulationTime}')
-                self.board.printBoard()
         return self
+    
+# %%
 
+def generateSpeciesList(numOfSpecies : int, stdevLog : float,
+                        t1: int, t2: int, 
+                        ns : int, 
+                        conNDD : float, hetNDD : float) -> 'SpeciesList':
+    """
+    Creates a SpeciesList with numOfSpecies number of species.
+    The following attributes of species are currently fixed but can be subjected to variation in future:
+        t1 (time taken for Juvenile to germinate to Adult, 
+        t2 (time taken for Adult to reach mortaility on average),
+        ns (number of seeds produced by each adult), 
+        conNDD (magnitude of conspecifc negative density dependence), 
+        hetNDD (magnitude of heterospecific negative density dependence)
+    
+    The following are drawn from a lognormal distribution:
+        p1 (probability that juvenile survives to adult on average)
+        p2 (probabiltiy that adult survives after t2 time steps)
+    """
+    
+    speciesList = SpeciesList()
+    for i in range(numOfSpecies):
+        # Generate p1 and p2
+        p1, p2 = np.random.lognormal(mean = 0.0, sigma = stdevLog, size = 2)
+        while (p1 > 1.0):
+            p1 = np.random.lognormal(mean = 0.0, sigma = stdevLog, size = None)
+        while (p2 > 1.0):
+            p2 = np.random.lognormal(mean = 0.0, sigma = stdevLog, size = None)
+        speciesList.addSpecies(Species(-1, p1, p2, t1, t2, ns, conNDD, hetNDD))
+    return speciesList
+
+# %%
