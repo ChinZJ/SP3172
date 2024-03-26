@@ -17,6 +17,7 @@ import dill as pickle
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import multiprocessing as mp
 
 # Current Issues
 
@@ -728,6 +729,9 @@ class Board:
         self.mean = [0, 0]
         self.cov = [[self.stdev**2, 0], [0, self.stdev**2]]
 
+        self.pool = mp.Pool(processes=mp.cpu_count())
+        self.indexes = [[i, j] for i in range(self.boardLength) for j in range(self.boardLength)]
+
     def loadBoard(self, filepath: str) -> 'Board':
         """
         Loads a Board object from a file. Uses the Dill module in Python.
@@ -845,7 +849,30 @@ class Board:
         saveName = str(boardTime) + ".csv"                                                  
         exportData.to_csv(saveName, index=False)
         return returnList
-        
+
+    def updateMulti(self, inputData: list) -> None:
+        """
+        Mini function for multiprocessing to work.
+
+        Args:
+            inputData (list): List of two elements. The first element is an iterable storing the
+                grid coordinates, and the second element is the newNeighborDict.
+        """
+        i, j, newNeighborDicts = inputData[0][0], inputData[0][1], inputData[1]
+        tileUpdate = self.board[i][j].update(newNeighborDicts[i][j],
+                                                    self.boomerModel)       # (Tile, PlantArray)
+        self.board[i][j] = tileUpdate[0]                                   # update Tile
+        newSeeds = tileUpdate[1]                                           # PlantArray of interest
+
+        for k in range(len(newSeeds.storage)):                             # list of Plants
+            newX, newY = np.round(np.random.multivariate_normal(self.mean, self.cov, 1))[0] # binomial normal distribution
+            newX = int(newX)
+            newY = int(newY)
+            if ((i + newX > -1) and (i + newX < self.boardLength) and
+                (j + newY > -1) and (j + newY < self.boardLength)):
+                self.seedBoard[i + newX][j + newY].addPlant(newSeeds.storage[k])
+                # This line ensures boomerModel with PlantArray of Adult will not overflow
+        return None
 
     def update(self) -> 'Board':
         """
@@ -858,35 +885,18 @@ class Board:
         Return:
             self.
         """
-        
+
         if (((self.boardTime - 1) % self.printFreq) == 0): # steal state every 100 timesteps
             newNeighborDicts = self.saveNeighborDicts(self.boardTime, self.boomerModel)
             self.printBoard(self.boardTime)
         else:
             newNeighborDicts = self.makeNeighborDicts()
             
+        multiInput = [self.indexes, newNeighborDicts]
         self.boardTime += 1
-        
-        for i in range(self.boardLength):
-            for j in range(self.boardLength):
-                tileUpdate = self.board[i][j].update(newNeighborDicts[i][j], 
-                                                    self.boomerModel)       # (Tile, PlantArray)
-                self.board[i][j] = tileUpdate[0]                                   # update Tile
-                newSeeds = tileUpdate[1]                                           # PlantArray of interest
-                
-                for k in range(len(newSeeds.storage)):                             # list of Plants
-#                     newX = random.choice([-1, 0, 1])
-#                     newY = random.choice([-1, 0, 1])
-                    newX, newY = np.round(np.random.multivariate_normal(self.mean, self.cov, 1))[0] # binomial normal distribution
-                    newX = int(newX)
-                    newY = int(newY)
-                    if ((i + newX > -1) and (i + newX < self.boardLength) and
-                        (j + newY > -1) and (j + newY < self.boardLength)):
-                        self.seedBoard[i + newX][j + newY].addPlant(newSeeds.storage[k]) # This line ensures
-                                                                                         # boomerModel with 
-                                                                                         # PlantArray of Adult
-                                                                                         # will not overflow
-                        
+
+        self.pool.map(self.updateMulti, multiInput)
+
         for i in range(self.boardLength):
             for j in range(self.boardLength):
                 self.board[i][j].plantArray.mergeArray(self.seedBoard[i][j]) # mergeArray allows addition of an Adult
