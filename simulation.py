@@ -891,8 +891,8 @@ class Board:
             self.printBoard(self.boardTime)
         else:
             newNeighborDicts = self.makeNeighborDicts()
-            
-        multiInput = [self.indexes, newNeighborDicts]
+        
+        multiInput = [[_, newNeighborDicts] for _ in self.indexes]
         self.boardTime += 1
 
         self.pool.map(self.updateMulti, multiInput)
