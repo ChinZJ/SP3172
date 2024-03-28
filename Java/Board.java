@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import java.util.*;
 import java.io.*;
 
@@ -129,11 +130,14 @@ public class Board {
     public void run(int steps) throws IOException {
         for (int i = 0; i <= steps; i++) {
             this.update();
-            if ((i + 1) % 100 == 0) {
-                this.exportData(i+1);
+            if ((i + 1) % 10 == 0) {
+                this.exportData(i + 1);
+            }
+            if ((i + 1) % 10 == 0) {
+                this.exportState(i + 1);
             }
         }
-        this.exportState(steps);
+        
     }
 
     public void exportData(Integer iter) throws IOException {
@@ -144,7 +148,7 @@ public class Board {
         BufferedWriter bw = new BufferedWriter(new FileWriter(fileName));
 
         // Iterate through all tiles and get the mergeDict
-        HashMap<Integer, Pair<Integer, Integer>> neighborMap = new HashMap<>();
+        HashMap<Integer, Pair<Pair<Integer, List<Integer>>, Integer>> neighborMap = new HashMap<>();
         for (Tile tile : this.board) {
             neighborMap = tile.mergeNeighborMap(neighborMap);
         }
@@ -160,8 +164,16 @@ public class Board {
             }
             // Reconstruct the csv
             if (neighborMap.containsKey(i)) {
-                Pair<Integer, Integer> pair = neighborMap.get(i);
-                editLine.set(10, pair.first.toString()); // 10 is adults
+                Pair<Pair<Integer, List<Integer>>, Integer> pair = neighborMap.get(i);
+                // Filter out the adults
+                Pair<Integer, List<Integer>> adultPair = pair.first;
+                System.out.println(adultPair);
+                // check for Adults
+                if (adultPair.first != 0) {
+                    String ages = String.join("#", adultPair.second.stream().map(Object::toString).collect(Collectors.toList()));
+                    editLine.set(10, adultPair.first.toString()); // 10 is adults
+                    editLine.set(12, ages);
+                }
                 editLine.set(11, pair.second.toString()); // 11 is juveniles
             } else {
                 editLine.set(10, "0");

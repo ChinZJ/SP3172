@@ -37,7 +37,8 @@ public class Species {
             return true;
         }
 
-        if (obj instanceof Species species) {
+        if (obj instanceof Species) {
+            Species species = (Species) obj;
             return this.speciesId == species.speciesId;
         }
 

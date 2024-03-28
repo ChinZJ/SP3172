@@ -67,17 +67,30 @@ public class Tile {
         return neighborMap;
     }
 
-    public HashMap<Integer, Pair<Integer, Integer>> mergeNeighborMap(HashMap<Integer, Pair<Integer, Integer>> neighborMap) {
+    public HashMap<Integer, Pair<Pair<Integer, List<Integer>>, Integer>> mergeNeighborMap(HashMap<Integer, Pair<Pair<Integer, List<Integer>>, Integer>> neighborMap) {
         // Note use speciesId as key to faciliate exportation in class Board
-        // key: Species, value: adultCount, juvenileCount
+        // key: Species, value: Pair<adultCount, list of ages>, juvenileCount
         for (Species key : this.oldNeighMap.keySet()) {
+            Pair<Integer, Integer> thisPair = this.oldNeighMap.get(key);
             if (neighborMap.containsKey(key.speciesId)) {
-                Pair<Integer, Integer> pair = neighborMap.get(key.speciesId);
-                pair.first += this.oldNeighMap.get(key).first;
-                pair.second += this.oldNeighMap.get(key).second;
+                Pair<Pair<Integer, List<Integer>>, Integer> pair = neighborMap.get(key.speciesId);
+                // Check if adult present
+                if (thisPair.first != 0) { //adult exists
+                    ++pair.first.first;
+                    pair.first.second.add(this.oldAdult.age);
+                } // else no need to update since no adult
+                pair.second += thisPair.second;
+
                 neighborMap.replace(key.speciesId, pair);
             } else {
-                neighborMap.put(key.speciesId, this.oldNeighMap.get(key));
+                List<Integer> adultAge = new ArrayList<>();
+                Pair<Integer, List<Integer>> pairFirst = new Pair<>(0, adultAge); //initialize
+                if (thisPair.first != 0) { //adult exists
+                    ++pairFirst.first;
+                    pairFirst.second.add(this.oldAdult.age);
+                } // else do nothing because no adults
+                Pair<Pair<Integer, List<Integer>>, Integer> pair = new Pair<>(pairFirst, thisPair.second);
+                neighborMap.put(key.speciesId, pair);
             }
         }
         return neighborMap;
