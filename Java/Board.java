@@ -130,10 +130,10 @@ public class Board {
     public void run(int steps) throws IOException {
         for (int i = 0; i <= steps; i++) {
             this.update();
-            if ((i + 1) % 10 == 0) {
+            if ((i + 1) % 100 == 0) {
                 this.exportData(i + 1);
             }
-            if ((i + 1) % 10 == 0) {
+            if ((i + 1) % 1000 == 0) {
                 this.exportState(i + 1);
             }
         }
