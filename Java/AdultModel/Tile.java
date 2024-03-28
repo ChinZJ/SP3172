@@ -191,53 +191,52 @@ public class Tile {
         }
     }
 
-    public void addNewSeeds() { 
-        int newSeedCount = 50 - newPlantArray.size();
-
-        // key: Species, value: "probability"
-        // Remember that neighborSeedProbabilities has DUMMY key
-        HashMap<Species, Double> neighborSeedProbabilities = this.countNeighborsSeeds();
-        double totalProb = neighborSeedProbabilities.get(Tile.DUMMY);
-        if (totalProb == 0.0) {
+    public void addNewSeeds() { // this is now addNewAdult because we have no juveniles
+        if (this.newAdult != null) {
+            // Case 1: adult exists, then return
             return;
-        }
-       
-        // Create cumulative probability
-        // key: probability, value: index to speciesList
-        TreeMap<Double, Integer> cumProbability = new TreeMap<>();
-        List<Species> speciesList = new ArrayList<>();
-        double cumProb = 0;
-        int idx = 0;
-
-        for (Map.Entry<Species, Double> prob : neighborSeedProbabilities.entrySet()) {
-            Species species = prob.getKey();
-            double speciesProb = prob.getValue();
-            if (species == Tile.DUMMY) { // DUMMY key must be EXCLUDED from calculations
-                continue;
+        } else {
+            // Case 2: adult does not exist, we need to pick a random adult from neighbors
+            // key: Species, value: "probability"
+            // Remember that neighborSeedProbabilities has DUMMY key
+            HashMap<Species, Double> neighborSeedProbabilities = this.countNeighborsSeeds();
+            double totalProb = neighborSeedProbabilities.get(Tile.DUMMY);
+            if (totalProb == 0.0) {
+                return;
             }
-            cumProb += speciesProb;
-            cumProbability.put((cumProb / totalProb), idx);
-            idx++;
-            speciesList.add(species); // index is now mappable to speciesList
-        }
-        
-        while (newSeedCount-- > 0) { 
-            // here, we assume that seeds are infinite
-            // thus, we will keep dispersing seeds until the array is filled
+           
+            // Create cumulative probability
+            // key: probability, value: index to speciesList
+            TreeMap<Double, Integer> cumProbability = new TreeMap<>();
+            List<Species> speciesList = new ArrayList<>();
+            double cumProb = 0;
+            int idx = 0;
+
+            for (Map.Entry<Species, Double> prob : neighborSeedProbabilities.entrySet()) {
+                Species species = prob.getKey();
+                double speciesProb = prob.getValue();
+                if (species == Tile.DUMMY) { // DUMMY key must be EXCLUDED from calculations
+                    continue;
+                }
+                cumProb += speciesProb;
+                cumProbability.put((cumProb / totalProb), idx);
+                idx++;
+                speciesList.add(species); // index is now mappable to speciesList
+            }
+
             double prob = Math.random();
             double key = cumProbability.ceilingKey(prob);
             int index = cumProbability.get(key);
 
             Species species = speciesList.get(index);
-            newPlantArray.add(new Juvenile(species, 0));
-            if (this.newNeighMap.containsKey(species)) {
-                Pair<Integer, Integer> pair = this.newNeighMap.get(species);
-                ++pair.second;
-                this.newNeighMap.replace(species, pair);
-            } else {
-                Pair<Integer, Integer> pair = new Pair<Integer, Integer>(0, 1);
-                this.newNeighMap.put(species, pair);
-            }
+            Adult adult = new Adult(species, 10); // Juvenile spans 9 years
+            // All adult traits added to new because updateSelf will replace it for us
+            this.newAdult = adult; 
+            this.newAdultSpeciesId = species.speciesId;
+            newPlantArray.add(new Adult(species, 9));
+
+            Pair<Integer, Integer> pair = new Pair<Integer, Integer>(1, 0);
+            this.newNeighMap.put(species, pair);
         }
     }
 

@@ -82,20 +82,18 @@ public class Board {
             Species species = this.speciesList.speciesList.get(key);
             Random random = new Random();
             int len = this.board.size();
-            for (int i = 0; i < numJuvenile; i++) {
+            for (int i = 0; i < numJuvenile; i++) { // Name not changed due to laziness
+                System.out.println("Adding Adult!");
                 while (true) {
                     // Only when a new Juvenile has been planted then we can proceed
                     int ind = random.nextInt(len);
-                    if (this.board.get(ind).oldPlantArray.size() < 50) {
-                        this.board.get(ind).oldPlantArray.add(new Juvenile(species, 0));
-                        if (this.board.get(ind).oldNeighMap.containsKey(species)) {
-                            Pair<Integer, Integer> pair = this.board.get(ind).oldNeighMap.get(species);
-                            ++pair.second;
-                            this.board.get(ind).oldNeighMap.replace(species, pair);
-                        } else {
-                            Pair<Integer, Integer> pair = new Pair<Integer, Integer>(0, 1);
-                            this.board.get(ind).oldNeighMap.put(species, pair);
-                        }
+                    if (this.board.get(ind).oldAdult == null) { //check if empty
+                        Adult adult = new Adult(species, 10); // juvenile takes 9
+                        this.board.get(ind).oldAdult = adult; // add to adult
+                        this.board.get(ind).oldAdultSpeciesId = species.speciesId; // add to Id
+                        this.board.get(ind).oldPlantArray.add(adult); // add to Array
+                        Pair<Integer, Integer> pair = new Pair<Integer, Integer>(1, 0);
+                        this.board.get(ind).oldNeighMap.put(species, pair);
                         break;
                     }
                 }
