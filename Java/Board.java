@@ -173,11 +173,15 @@ public class Board {
                     String ages = String.join("#", adultPair.second.stream().map(Object::toString).collect(Collectors.toList()));
                     editLine.set(10, adultPair.first.toString()); // 10 is adults
                     editLine.set(12, ages);
+                } else {
+                    editLine.set(10, "0");
+                    editLine.set(12, "");
                 }
                 editLine.set(11, pair.second.toString()); // 11 is juveniles
             } else {
                 editLine.set(10, "0");
                 editLine.set(11, "0");
+                editLine.set(12, "");
             }
             bw.write(String.join(",", editLine));
             bw.newLine();
