@@ -83,7 +83,6 @@ public class Board {
             Random random = new Random();
             int len = this.board.size();
             for (int i = 0; i < numJuvenile; i++) { // Name not changed due to laziness
-                System.out.println("Adding Adult!");
                 while (true) {
                     // Only when a new Juvenile has been planted then we can proceed
                     int ind = random.nextInt(len);
