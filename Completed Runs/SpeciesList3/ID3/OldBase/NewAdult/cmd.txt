@@ -1,1 +1,0 @@
-java Main SpeciesList3_3.csv Bivariate_Distribution.csv 10 100 1 5 1000000

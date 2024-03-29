@@ -1,1 +1,0 @@
-java Main .\SpeciesList_1_8.csv .\Bivariate_Distribution.csv 10 100 1 100 100000
