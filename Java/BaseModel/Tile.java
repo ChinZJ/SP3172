@@ -101,7 +101,7 @@ public class Tile {
         // Note that individuals on the same Tile can also disperse seeds to itself and are thus included
         // key: Species, value: probabilities
         HashMap<Species, Double> seedNeighbors = new HashMap<>();
-        double count = 0;
+        double count = 0.0;
         for (Map.Entry<Integer, List<Tile>> tiles : nSeeds.entrySet()) {
             int distance = tiles.getKey();
             List<Tile> lst = tiles.getValue();
@@ -136,8 +136,7 @@ public class Tile {
             int conNeighbors = neighborMap.get(oldPlant.species) - 1; // note that we have to SUBTRACT itself
             int hetNeighbors = totalNeighborAdults - conNeighbors - 1; // again, subtract ITSELF
             Plant newPlant = oldPlant.update(conNeighbors, hetNeighbors);
-            if (oldPlant == this.oldAdult) {
-            }
+
             if (newPlant == null) { // dead
                 continue;
             }
@@ -180,7 +179,7 @@ public class Tile {
             this.newPlantArray.add(this.newAdult);
             if (this.newNeighMap.containsKey(this.newAdult.species)) {
                 Pair<Integer, Integer> pair = this.newNeighMap.get(this.newAdult.species);
-                ++pair.first;
+                pair.first = 1;
                 this.newNeighMap.replace(this.newAdult.species, pair);
             } else {
                 Pair<Integer, Integer> pair = new Pair<Integer, Integer>(1, 0);

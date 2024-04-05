@@ -104,6 +104,7 @@ public class Board {
     public void update() {
         // parallelization input here
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        // ExecutorService executor = Executors.newFixedThreadPool();
 
         this.board.parallelStream().forEach(tile -> executor.execute(() -> {
             tile.updateExistingPlants();
@@ -117,6 +118,7 @@ public class Board {
         while (!executor.isTerminated()); // wait
         
         ExecutorService executorTwo = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        //ExecutorService executorTwo = Executors.newFixedThreadPool();
 
         this.board.parallelStream().forEach(tile -> executorTwo.execute(() -> {
             tile.updateSelf();
@@ -134,6 +136,7 @@ public class Board {
                 this.exportData(i + 1);
             }
             if ((i + 1) % 1000 == 0) {
+                System.out.println("Saving State");
                 this.exportState(i + 1);
             }
         }
@@ -167,7 +170,6 @@ public class Board {
                 Pair<Pair<Integer, List<Integer>>, Integer> pair = neighborMap.get(i);
                 // Filter out the adults
                 Pair<Integer, List<Integer>> adultPair = pair.first;
-                System.out.println(adultPair);
                 // check for Adults
                 if (adultPair.first != 0) {
                     String ages = String.join("#", adultPair.second.stream().map(Object::toString).collect(Collectors.toList()));
