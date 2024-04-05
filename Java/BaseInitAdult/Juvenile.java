@@ -1,3 +1,5 @@
+// package TeTrees.t;
+
 public class Juvenile extends Plant {
     public Juvenile(Species s, int age) {
         super(s, age);
@@ -17,7 +19,7 @@ public class Juvenile extends Plant {
 
     @Override
     public boolean updateTick(int cNeighbors, int hNeighbors) {
-        return Math.random() <= this.species.seedPerTick - calculateNDD(cNeighbors, hNeighbors);
+        return Math.random() <= this.species.p1 - calculateNDD(cNeighbors, hNeighbors);
     }
 
     @Override
@@ -25,7 +27,7 @@ public class Juvenile extends Plant {
         if (this.updateTick(cNeighbors, hNeighbors)) {
             ++this.age;
             if (this.age >= this.species.t1) {
-                return new Adult(this.species, this.age);
+                return new Adult(this.species, 0);
             }
             return this;
         }

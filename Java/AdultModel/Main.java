@@ -5,6 +5,17 @@ import java.util.concurrent.Executors;
 import java.util.*;
 import java.io.*;
 
+// import TeTrees.t.*; // in case this does not work
+// import TeTrees.t.Pair;
+// import TeTrees.t.Species;
+// import TeTrees.t.SpeciesList;
+// import TeTrees.t.BivariateDist;
+// import TeTrees.t.Plant;
+// import TeTrees.t.Juvenile;
+// import TeTrees.t.Adult;
+// import TeTrees.t.Tile;
+// import TeTrees.t.Board;
+
 public class Main {
     public static void main(String[] args) throws FileNotFoundException, Exception, IOException{
         // Capture the start time
